@@ -1,0 +1,127 @@
+# --- Librerías necesarias ---
+if (!require("readr")) install.packages("readr")
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("car")) install.packages("car")
+if (!require("dplyr")) install.packages("dplyr")
+
+library(readr)
+library(ggplot2)
+library(car)
+library(dplyr)
+
+# --- Leer archivo CSV ---
+ruta_archivo <- "C:/Users/DELL/Downloads/Libro1.csv"
+data <- read_csv(ruta_archivo)
+
+# Verificar estructura y primeros datos
+print(head(data))
+print(str(data))
+
+# --- Ajustar nombres si es necesario ---
+# Asegúrate que los nombres estén en minúsculas y sin espacios para evitar errores
+names(data) <- tolower(names(data))
+names(data) <- gsub(" ", "_", names(data))
+
+# --- Funciones reutilizables --- (copiar aquí las funciones que ya definimos antes)
+
+estadisticas_descriptivas <- function(data) {
+  print("Resumen de datos:")
+  print(summary(data))
+  
+  cat("\nMedia de peso:", mean(data$peso, na.rm = TRUE), "\n")
+  cat("Media de talla:", mean(data$talla, na.rm = TRUE), "\n")
+  cat("Media de imc:", mean(data$imc, na.rm = TRUE), "\n")
+  
+  print("Conteo por sexo:")
+  print(table(data$sexo))
+}
+
+graficas_basicas <- function(data) {
+  hist(data$peso, main = "Distribución de Peso", xlab = "Peso", col = "skyblue", border = "white")
+  
+  boxplot(imc ~ sexo, data = data,
+          main = "IMC según Sexo",
+          ylab = "IMC",
+          col = c("lightpink", "lightblue"))
+  
+  plot(data$talla, data$peso,
+       col = ifelse(data$sexo == "Masculino", "blue", "red"),
+       pch = 19,
+       xlab = "Talla",
+       ylab = "Peso",
+       main = "Peso vs Talla por Sexo")
+  legend("topright", legend = c("Masculino", "Femenino"),
+         col = c("blue", "red"), pch = 19)
+}
+
+pruebas_normalidad <- function(data, variable, grupo) {
+  grupos <- unique(data[[grupo]])
+  for (g in grupos) {
+    cat("\nPrueba de Shapiro para", variable, "en grupo", g, ":\n")
+    subset_data <- data[data[[grupo]] == g, variable]
+    print(shapiro.test(subset_data))
+    
+    qqnorm(subset_data, main = paste("QQ-Plot de", variable, "en", g))
+    qqline(subset_data)
+  }
+}
+
+pruebas_homogeneidad <- function(data, variable, grupo) {
+  cat("\nPrueba de Bartlett (varianzas iguales):\n")
+  print(bartlett.test(data[[variable]] ~ data[[grupo]]))
+  
+  cat("\nPrueba de Levene (más robusta):\n")
+  print(leveneTest(data[[variable]] ~ data[[grupo]]))
+}
+
+prueba_t <- function(data, variable, grupo) {
+  cat("\nPrueba t para", variable, "entre grupos de", grupo, ":\n")
+  resultado <- t.test(data[[variable]] ~ data[[grupo]])
+  print(resultado)
+}
+
+detectar_outliers <- function(data, variable) {
+  x <- data[[variable]]
+  q1 <- quantile(x, 0.25, na.rm = TRUE)
+  q3 <- quantile(x, 0.75, na.rm = TRUE)
+  iqr <- q3 - q1
+  lower_bound <- q1 - 1.5 * iqr
+  upper_bound <- q3 + 1.5 * iqr
+  outliers <- x[x < lower_bound | x > upper_bound]
+  cat("Outliers detectados en", variable, ":\n")
+  print(outliers)
+  return(outliers)
+}
+
+resumen_con_error <- function(data, variable, grupo) {
+  summary_data <- data %>%
+    group_by(.data[[grupo]]) %>%
+    summarise(media = mean(.data[[variable]], na.rm = TRUE),
+              sd = sd(.data[[variable]], na.rm = TRUE),
+              n = n(),
+              se = sd / sqrt(n))
+  
+  ggplot(summary_data, aes_string(x = grupo, y = "media", fill = grupo)) +
+    geom_bar(stat = "identity", width = 0.6) +
+    geom_errorbar(aes(ymin = media - se, ymax = media + se), width = 0.2) +
+    labs(title = paste("Media de", variable, "con error estándar"), y = variable) +
+    theme_minimal() -> p
+  print(p)
+}
+
+# --- Ejecutar análisis ---
+
+estadisticas_descriptivas(data)
+graficas_basicas(data)
+
+# Normalidad y homogeneidad para la variable peso
+pruebas_normalidad(data, "peso", "sexo")
+pruebas_homogeneidad(data, "peso", "sexo")
+prueba_t(data, "peso", "sexo")
+detectar_outliers(data, "peso")
+resumen_con_error(data, "peso", "sexo")
+
+# Si quieres hacer lo mismo con talla o imc solo cambia el nombre de variable:
+# prueba_t(data, "imc", "sexo")
+# prueba_t(data, "talla", "sexo")
+
