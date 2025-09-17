@@ -1,0 +1,168 @@
+# --- Librerías necesarias ---
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("car")) install.packages("car")
+if (!require("dplyr")) install.packages("dplyr")
+
+library(ggplot2)
+library(car)
+library(dplyr)
+
+# --- Función para crear un dataset de ejemplo ---
+crear_dataset <- function(seed = 123, n = 20) {
+  set.seed(seed)
+  data <- data.frame(
+    ID = 1:n,
+    Nombre = sample(c("Ana", "Luis", "Carlos", "María", "Elena", "José", "Laura", "Pedro", "Sofía", "Juan",
+                      "Daniela", "Andrés", "Lucía", "Miguel", "Carmen", "Raúl", "Valeria", "Jorge", "Paula", "Diego"), n, replace = TRUE),
+    Edad = sample(18:65, n, replace = TRUE),
+    Sexo = sample(c("Masculino", "Femenino"), n, replace = TRUE),
+    Peso_kg = round(runif(n, 50, 100), 1),
+    Talla_m = round(runif(n, 1.5, 1.9), 2)
+  )
+  data$IMC <- round(data$Peso_kg / (data$Talla_m^2), 1)
+  data$Ingesta_calorica_kcal <- round(runif(n, 1500, 3500))
+  data$Nivel_actividad <- sample(c("Sedentario", "Moderado", "Activo"), n, replace = TRUE)
+  return(data)
+}
+
+# --- Estadísticas descriptivas básicas ---
+estadisticas_descriptivas <- function(data) {
+  print("Resumen de datos:")
+  print(summary(data))
+  
+  cat("\nMedia de Edad:", mean(data$Edad), "\n")
+  cat("Media de Peso (kg):", mean(data$Peso_kg), "\n")
+  cat("Media de IMC:", mean(data$IMC), "\n")
+  
+  print("Conteo por Sexo:")
+  print(table(data$Sexo))
+  print("Conteo por Nivel de actividad:")
+  print(table(data$Nivel_actividad))
+}
+
+# --- Visualizaciones básicas ---
+graficas_basicas <- function(data) {
+  hist(data$Edad, main = "Distribución de Edad", xlab = "Edad (años)", col = "skyblue", border = "white")
+  
+  boxplot(IMC ~ Sexo, data = data,
+          main = "IMC según Sexo",
+          ylab = "IMC",
+          col = c("lightpink", "lightblue"))
+  
+  barplot(table(data$Nivel_actividad),
+          main = "Nivel de actividad física",
+          col = "lightgreen",
+          ylab = "Número de personas")
+  
+  plot(data$Talla_m, data$Peso_kg,
+       col = ifelse(data$Sexo == "Masculino", "blue", "red"),
+       pch = 19,
+       xlab = "Talla (m)",
+       ylab = "Peso (kg)",
+       main = "Peso vs Talla por Sexo")
+  legend("topright", legend = c("Masculino", "Femenino"),
+         col = c("blue", "red"), pch = 19)
+}
+
+# --- Visualizaciones con ggplot2 ---
+graficas_ggplot <- function(data) {
+  ggplot(data, aes(x = Edad)) +
+    geom_histogram(binwidth = 5, fill = "skyblue", color = "black") +
+    labs(title = "Distribución de Edad", x = "Edad", y = "Frecuencia") +
+    theme_minimal() -> p1
+  print(p1)
+  
+  ggplot(data, aes(x = Sexo, y = IMC, fill = Sexo)) +
+    geom_boxplot() +
+    labs(title = "IMC según Sexo", y = "IMC") +
+    theme_minimal() -> p2
+  print(p2)
+  
+  ggplot(data, aes(x = Nivel_actividad, fill = Nivel_actividad)) +
+    geom_bar() +
+    labs(title = "Nivel de actividad física", x = "Nivel de actividad", y = "Cantidad") +
+    theme_minimal() -> p3
+  print(p3)
+  
+  ggplot(data, aes(x = Talla_m, y = Peso_kg, color = Sexo)) +
+    geom_point(size = 3) +
+    labs(title = "Peso vs Talla por Sexo", x = "Talla (m)", y = "Peso (kg)") +
+    theme_minimal() -> p4
+  print(p4)
+}
+
+# --- Pruebas de normalidad ---
+pruebas_normalidad <- function(data, variable, grupo) {
+  grupos <- unique(data[[grupo]])
+  for (g in grupos) {
+    cat("\nPrueba de Shapiro para", variable, "en grupo", g, ":\n")
+    subset_data <- data[data[[grupo]] == g, variable]
+    print(shapiro.test(subset_data))
+    
+    # QQ plot
+    qqnorm(subset_data, main = paste("QQ-Plot de", variable, "en", g))
+    qqline(subset_data)
+  }
+}
+
+# --- Pruebas de homogeneidad de varianzas ---
+pruebas_homogeneidad <- function(data, variable, grupo) {
+  cat("\nPrueba de Bartlett (varianzas iguales):\n")
+  print(bartlett.test(data[[variable]] ~ data[[grupo]]))
+  
+  cat("\nPrueba de Levene (más robusta):\n")
+  print(leveneTest(data[[variable]] ~ data[[grupo]]))
+}
+
+# --- Prueba t de comparación de medias ---
+prueba_t <- function(data, variable, grupo) {
+  cat("\nPrueba t para", variable, "entre grupos de", grupo, ":\n")
+  resultado <- t.test(data[[variable]] ~ data[[grupo]])
+  print(resultado)
+}
+
+# --- Detección de outliers usando IQR ---
+detectar_outliers <- function(data, variable) {
+  x <- data[[variable]]
+  q1 <- quantile(x, 0.25)
+  q3 <- quantile(x, 0.75)
+  iqr <- q3 - q1
+  lower_bound <- q1 - 1.5 * iqr
+  upper_bound <- q3 + 1.5 * iqr
+  outliers <- x[x < lower_bound | x > upper_bound]
+  cat("Outliers detectados en", variable, ":\n")
+  print(outliers)
+  return(outliers)
+}
+
+# --- Resumen y gráfica con error estándar ---
+resumen_con_error <- function(data, variable, grupo) {
+  summary_data <- data %>%
+    group_by(.data[[grupo]]) %>%
+    summarise(media = mean(.data[[variable]], na.rm = TRUE),
+              sd = sd(.data[[variable]], na.rm = TRUE),
+              n = n(),
+              se = sd / sqrt(n))
+  
+  ggplot(summary_data, aes_string(x = grupo, y = "media", fill = grupo)) +
+    geom_bar(stat = "identity", width = 0.6) +
+    geom_errorbar(aes(ymin = media - se, ymax = media + se), width = 0.2) +
+    labs(title = paste("Media de", variable, "con error estándar"), y = variable) +
+    theme_minimal() -> p
+  print(p)
+}
+
+# --- EJEMPLO DE USO CON EL DATASET CREADO ---
+
+data <- crear_dataset()
+
+estadisticas_descriptivas(data)
+graficas_basicas(data)
+graficas_ggplot(data)
+
+pruebas_normalidad(data, "Peso_kg", "Sexo")
+pruebas_homogeneidad(data, "Peso_kg", "Sexo")
+prueba_t(data, "Peso_kg", "Sexo")
+
+detectar_outliers(data, "Peso_kg")
+resumen_con_error(data, "Peso_kg", "Sexo")
