@@ -1,0 +1,160 @@
+vector_numerico <- c(1, 2, 3, 4, 5)
+vector_numerico
+vector_caracteres <- c("a", "b", "c", "d", "e")
+
+matriz <- matrix(1:9, nrow = 3, ncol = 3)
+matriz
+
+lista <- list(numeros = c(1, 2, 3), letras = c("a", "b", "c"))
+lista
+
+set.seed(123)  # Para reproducibilidad
+
+# Crear el data frame
+data <- data.frame(
+  ID = 1:20,
+  Nombre = sample(c("Ana", "Luis", "Carlos", "María", "Elena", "José", "Laura", "Pedro", "Sofía", "Juan",
+                    "Daniela", "Andrés", "Lucía", "Miguel", "Carmen", "Raúl", "Valeria", "Jorge", "Paula", "Diego"), 20),
+  Edad = sample(18:65, 20, replace = TRUE),
+  Sexo = sample(c("Masculino", "Femenino"), 20, replace = TRUE),
+  Peso_kg = round(runif(20, 50, 100), 1),
+  Talla_m = round(runif(20, 1.5, 1.9), 2)
+)
+
+# Calcular IMC
+data$IMC <- round(data$Peso_kg / (data$Talla_m^2), 1)
+
+# Ingesta calórica
+data$Ingesta_calorica_kcal <- round(runif(20, 1500, 3500))
+
+# Nivel de actividad
+data$Nivel_actividad <- sample(c("Sedentario", "Moderado", "Activo"), 20, replace = TRUE)
+
+# Ver resultados
+print(data)
+
+
+media_edad <- mean(data$Edad)
+print(media_edad)
+
+hist(data$Edad, main = "Distribución de Edad", xlab = "Edad (años)", col = "skyblue", border = "white")
+
+boxplot(IMC ~ Sexo, data = data,
+        main = "IMC según Sexo",
+        ylab = "IMC",
+        col = c("lightpink", "lightblue"))
+
+barplot(table(data$Nivel_actividad),
+        main = "Nivel de actividad física",
+        col = "lightgreen",
+        ylab = "Número de personas")
+
+plot(data$Talla_m, data$Peso_kg,
+     col = ifelse(data$Sexo == "Masculino", "blue", "red"),
+     pch = 19,
+     xlab = "Talla (m)",
+     ylab = "Peso (kg)",
+     main = "Peso vs Talla por Sexo")
+legend("topright", legend = c("Masculino", "Femenino"),
+       col = c("blue", "red"), pch = 19)
+
+install.packages("ggplot2")  # Solo la primera vez que la uses
+library(ggplot2)
+
+
+ggplot(data, aes(x = Edad)) +
+  geom_histogram(binwidth = 5, fill = "skyblue", color = "black") +
+  labs(title = "Distribución de Edad", x = "Edad", y = "Frecuencia")
+
+ggplot(data, aes(x = Sexo, y = IMC, fill = Sexo)) +
+  geom_boxplot() +
+  labs(title = "IMC según Sexo", y = "IMC") +
+  theme_minimal()
+
+ggplot(data, aes(x = Nivel_actividad, fill = Nivel_actividad)) +
+  geom_bar() +
+  labs(title = "Nivel de actividad física", x = "Nivel de actividad", y = "Cantidad") +
+  theme_minimal()
+
+
+ggplot(data, aes(x = Talla_m, y = Peso_kg, color = Sexo)) +
+  geom_point(size = 3) +
+  labs(title = "Peso vs Talla por Sexo", x = "Talla (m)", y = "Peso (kg)") +
+  theme_minimal()
+
+table(data$Sexo)
+t.test(Peso_kg ~ Sexo, data = data)
+
+
+hist(data$Peso_kg[data$Sexo == "Femenino"], main = "Peso Mujeres", xlab = "Peso (kg)")
+hist(data$Peso_kg[data$Sexo == "Masculino"], main = "Peso Hombres", xlab = "Peso (kg)")
+
+qqnorm(data$Peso_kg[data$Sexo == "Femenino"]); qqline(data$Peso_kg[data$Sexo == "Femenino"])
+qqnorm(data$Peso_kg[data$Sexo == "Masculino"]); qqline(data$Peso_kg[data$Sexo == "Masculino"])
+
+shapiro.test(data$Peso_kg[data$Sexo == "Femenino"])
+shapiro.test(data$Peso_kg[data$Sexo == "Masculino"])
+
+
+# Prueba de Bartlett (para normalidad asumida)
+bartlett.test(Peso_kg ~ Sexo, data = data)
+
+# Prueba de Levene (más robusta, requiere paquete car)
+install.packages("car")
+library(car)
+leveneTest(Peso_kg ~ Sexo, data = data)
+
+boxplot(Peso_kg ~ Sexo, data = data,
+        main = "Distribución del peso por sexo",
+        ylab = "Peso (kg)",
+        col = c("lightblue", "pink"))
+
+library(ggplot2)
+ggplot(data, aes(x = Sexo, y = Peso_kg, fill = Sexo)) +
+  geom_violin(trim = FALSE) +
+  geom_boxplot(width = 0.1, fill = "white") +
+  labs(title = "Distribución del peso por sexo") +
+  theme_minimal()
+
+ggplot(data, aes(x = Sexo, y = Peso_kg, color = Sexo)) +
+  geom_jitter(width = 0.2, size = 2) +
+  labs(title = "Peso individual por sexo") +
+  theme_minimal()
+
+library(dplyr)
+
+# Calcular media y error estándar
+summary_data <- data %>%
+  group_by(Sexo) %>%
+  summarise(media = mean(Peso_kg),
+            sd = sd(Peso_kg),
+            n = n(),
+            se = sd / sqrt(n))
+
+# Graficar con ggplot2
+ggplot(summary_data, aes(x = Sexo, y = media, fill = Sexo)) +
+  geom_bar(stat = "identity", width = 0.6) +
+  geom_errorbar(aes(ymin = media - se, ymax = media + se), width = 0.2) +
+  labs(title = "Media de peso con error estándar", y = "Peso (kg)") +
+  theme_minimal()
+
+
+# 1. Extraer la variable
+peso <- data$Peso_kg
+
+# 2. Calcular Q1 (cuartil 25%) y Q3 (cuartil 75%)
+q1 <- quantile(peso, 0.25)
+q3 <- quantile(peso, 0.75)
+
+# 3. Calcular el IQR (rango intercuartílico)
+iqr <- q3 - q1
+
+# 4. Definir límites para detectar outliers
+lower_bound <- q1 - 1.5 * iqr
+upper_bound <- q3 + 1.5 * iqr
+
+# 5. Identificar los valores que son outliers (fuera de los límites)
+outliers <- peso[peso < lower_bound | peso > upper_bound]
+
+# Mostrar resultados
+outliers
