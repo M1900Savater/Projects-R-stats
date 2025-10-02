@@ -1,0 +1,21 @@
+Sesión 2
+📌 Funciones básicas de R
+c() → Crea vectores.
+print() → Muestra objetos en consola.
+class() → Muestra la clase/tipo de un objeto.
+data.frame() → Crea una tabla/dataset con variables.
+sapply() → Aplica una función a cada columna.
+table() → Hace tablas de frecuencia.
+subset() → Filtra filas según condiciones.
+grep() → Busca cadenas de texto en variables tipo string.
+📌 Funciones de dplyr
+select() → Selecciona columnas.
+filter() → Filtra filas según condiciones.
+mutate() → Crea o transforma variables.
+case_when() → Recodifica variables con condiciones lógicas múltiples.
+📌 Funciones de recodificación
+car::recode() → Recodifica variables con rangos o reglas tipo diccionario (“20:21=1; 22=2”).
+dplyr::recode() → Recodificación directa valor a valor (1=“A”, 2=“B”).
+📌 Funciones extra útiles
+View() → Abre el dataset en una pestaña (solo en RStudio).
+%>% → El “pipe” que encadena operaciones (de dplyr).
