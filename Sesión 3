@@ -1,0 +1,135 @@
+Sesión 3 intro a R
+Miguel Castro
+2025-10-03
+Uso de Claude
+Función IFELSE
+CREACIÓN DE BASE DE DATOS
+Base de datos simulada de nutrición humana
+15 variables con diferentes tipos
+set.seed(123) # Para reproducibilidad n <- 200 # 200 participantes
+Crear el data frame
+datos_nutricion <- data.frame( # 1. ID del participante (numérica) id = 1:n,
+2. Sexo (categórica binaria)
+sexo = sample(c(“Masculino”, “Femenino”), n, replace = TRUE),
+3. Edad (numérica continua)
+edad = round(rnorm(n, mean = 35, sd = 12)),
+4. Peso en kg (numérica continua)
+peso_kg = round(rnorm(n, mean = 70, sd = 15), 1),
+5. Altura en cm (numérica continua)
+altura_cm = round(rnorm(n, mean = 168, sd = 10), 1),
+6. Nivel de actividad física (categórica ordinal)
+actividad_fisica = sample(c(“Sedentario”, “Ligero”, “Moderado”, “Intenso”), n, replace = TRUE, prob = c(0.3, 0.35, 0.25, 0.1)),
+7. Consumo de agua diario en litros (numérica continua)
+agua_litros = round(rnorm(n, mean = 2.0, sd = 0.7), 2),
+8. Consumo de frutas y verduras (porciones/día) (numérica discreta)
+frutas_verduras_dia = rpois(n, lambda = 3.5),
+9. Consumo de proteína diaria en gramos (numérica continua)
+proteina_g = round(rnorm(n, mean = 80, sd = 25), 1),
+10. Tipo de dieta (categórica nominal)
+tipo_dieta = sample(c(“Omnívora”, “Vegetariana”, “Vegana”, “Keto”, “Mediterránea”), n, replace = TRUE, prob = c(0.5, 0.15, 0.10, 0.10, 0.15)),
+11. Consume suplementos (categórica binaria)
+suplementos = sample(c(“Sí”, “No”), n, replace = TRUE, prob = c(0.4, 0.6)),
+12. Nivel de colesterol (mg/dL) (numérica continua)
+colesterol_mg_dl = round(rnorm(n, mean = 195, sd = 35), 1),
+13. Glucosa en ayunas (mg/dL) (numérica continua)
+glucosa_mg_dl = round(rnorm(n, mean = 95, sd = 15), 1),
+14. Frecuencia de comidas al día (numérica discreta)
+comidas_dia = sample(2:6, n, replace = TRUE, prob = c(0.1, 0.35, 0.35, 0.15, 0.05)),
+15. Estado nutricional (categórica ordinal)
+estado_nutricional = sample(c(“Bajo peso”, “Normal”, “Sobrepeso”, “Obesidad”), n, replace = TRUE, prob = c(0.10, 0.45, 0.30, 0.15)) )
+Calcular IMC basado en peso y altura
+datos_nutricionimc<-round(datos_n utricionpeso_kg / (datos_nutricion$altura_cm/100)^2, 1)
+Ajustar algunas inconsistencias para mayor realismo
+datos_nutricionedad<-pmax(18,pmin(75,datos_n utricionedad)) datos_nutricionpeso_k g<-pmax(45,pmin(150,datos_n utricionpeso_kg)) datos_nutricionaltura_c m<-pmax(150,pmin(200,datos_n utricionaltura_cm)) datos_nutricionagua_l itros<-pmax(0.5,pmin(5,datos_n utricionagua_litros)) datos_nutricioncolesterol_m g_d l<-pmax(120,pmin(300,datos_n utricioncolesterol_mg_dl)) datos_nutricionglucosa_m g_d l<-pmax(70,pmin(140,datos_n utricionglucosa_mg_dl))
+Convertir variables categóricas a factores
+datos_nutricionsexo<-factor(datos_n utricionsexo) datos_nutricionactividad_f isica<-factor(datos_n utricionactividad_fisica, levels = c(“Sedentario”, “Ligero”, “Moderado”, “Intenso”), ordered = TRUE) datos_nutriciontipo_d ieta<-factor(datos_n utriciontipo_dieta) datos_nutricionsuplementos<-factor(datos_n utricionsuplementos) datos_nutricionestado_n utricional<-factor(datos_n utricionestado_nutricional, levels = c(“Bajo peso”, “Normal”, “Sobrepeso”, “Obesidad”), ordered = TRUE)
+Mostrar las primeras filas
+head(datos_nutricion, 10)
+Resumen de la estructura
+str(datos_nutricion)
+Estadísticas descriptivas
+summary(datos_nutricion)
+============================================
+EJERCICIO: Recodificación similar al ejemplo CEP
+============================================
+Primero, vamos a crear una variable numérica de actividad física
+para poder recodificarla (la original es factor)
+Cargar paquetes necesarios
+library(dplyr) ###se ha creado actividad_num datos_nutricion <- datos_nutricion %>% dplyr::mutate(actividad_num = case_when(
+actividad_fisica == “Sedentario” ~ 1, actividad_fisica == “Ligero” ~ 2, actividad_fisica == “Moderado” ~ 3, actividad_fisica == “Intenso” ~ 4 ))
+Ahora INVERTIMOS la escala (se crea una nueva variable y luego con ifelse aparece la inversión)
+Convertimos: 1->4, 2->3, 3->2, 4->1
+datos_nutricion <- datos_nutricion %>% dplyr::mutate(inactividad = ifelse(actividad_num == 1, 4, ifelse(actividad_num == 2, 3, ifelse(actividad_num == 3, 2, ifelse(actividad_num == 4, 1, NA))))) datos_nutricion — #3.Estadística descriptiva ##3.1 Medidas de tendencia central: media, mediana y moda ## Cargar la librería si no la tienes library(dplyr)
+Promedio de peso ignorando NAs
+mean(datos_nutricion$peso_kg, na.rm = TRUE)
+Promedio de edad
+mean(datos_nutricion$edad, na.rm = TRUE)
+Promedio de consumo de agua
+mean(datos_nutricion$agua_litros, na.rm = TRUE)
+###“Calcula el promedio de la variable pesokg del data frame datos_, ignorando los valores faltantes (NA)”
+Mediana
+median(datos_nutricion$peso_kg, na.rm = TRUE)
+Desviación estándar
+sd(datos_nutricion$peso_kg, na.rm = TRUE)
+Mínimo y máximo
+min(datos_nutricionpeso_k g,na.rm=TRUE)max(datos_n utricionpeso_kg, na.rm = TRUE)
+Suma
+sum(datos_nutricion$peso_kg, na.rm = TRUE)
+============================================================
+MEDIDAS DE POSICIÓN EN R
+Cuartiles, Deciles y Percentiles
+============================================================
+Cuartil 1 (25%)
+quantile(datos_nutricion$peso_kg, 0.25, na.rm = TRUE) ###todos—-> varias opciones
+OPCIÓN 1: Con quantile() - Los 3 cuartiles
+quantile(datos_nutricion$peso_kg, probs = c(0.25, 0.50, 0.75), na.rm = TRUE)
+OPCIÓN 2: Incluyendo mínimo (0%) y máximo (100%) - 5 valores
+quantile(datos_nutricion$peso_kg, probs = c(0, 0.25, 0.50, 0.75, 1), na.rm = TRUE)
+OPCIÓN 3: Con summary() - La más simple LA MEJOR
+summary(datos_nutricion$peso_kg)     ### Te da: Min, Q1, Median, Mean, Q3, Max     quantile(datos_nutricion$peso_kg, 0.75, na.rm = TRUE)
+Percentil 90
+quantile(datos_nutricion$peso_kg, 0.90, na.rm = TRUE)
+Todos los deciles de una vez
+quantile(datos_nutricion$peso_kg, seq(0.1, 0.9, 0.1), na.rm = TRUE)
+Percentiles 4, 8, 15 y 65
+percentiles_especificos <- quantile(datos_nutricion$peso_kg, probs = c(0.04, 0.08, 0.15, 0.65), na.rm = TRUE) print(percentiles_especificos)
+COMO se supone que haré limpieza de datos, no será necesario aplicar NA.RM, VEAMOS UN EJEMPLO percentiles_especificos <- quantile(datos_nutricion$peso_kg, probs = c(0.04, 0.08, 0.15, 0.65)) print(percentiles_especificos)
+##EJERCICIOS Actividades Promedio y mediana
+Calcula el promedio y la mediana de la variable edad.
+Interpreta si la distribución parece estar sesgada (compara media vs. mediana).
+Dispersión
+Calcula la desviación estándar de peso_kg.
+Explica qué significa este valor en términos prácticos para la variabilidad del peso de los participantes.
+Medidas de posición
+Obtén los cuartiles (Q1, Q2, Q3) del peso_kg usando la función quantile().
+Explica qué representa cada uno en relación con los participantes.
+Percentiles específicos
+Calcula el percentil 90 del peso_kg.
+Interpreta: ¿qué significa que un participante esté por debajo del P90?
+Deciles
+Obtén todos los deciles de peso_kg y determina el valor límite del D5.
+Explica cómo se relaciona con la mediana.
+Aplicación práctica
+Supongamos que un deportista tiene un peso de 78 kg.
+Ubícalo en qué cuartil y en qué decil se encuentra.
+¿Dirías que su peso está dentro de los valores más bajos, medios o altos de la muestra?
+mean(datos_nutricionedad)median(datos_n utricionedad) sd(datos_nutricionpeso_k g)quantile(datos_n utricionpeso_kg, probs = c(0.25, 0.50, 0.75)) quantile(datos_nutricionpeso_k g,0.90)quantile(datos_n utricionpeso_kg, seq(0.1, 0.9, 0.1))
+se encuentra en el valor medio alto
+================================================= 
+📌 Resumen de funciones de Estadística Descriptiva en R 1. Medidas de tendencia central mean(x, na.rm = TRUE) → Calcula la media.
+median(x, na.rm = TRUE) → Calcula la mediana.
+(La moda no tiene función directa en R base, se suele programar con table() o usar paquetes).
+	Medidas de dispersión sd(x, na.rm = TRUE) → Desviación estándar.
+min(x, na.rm = TRUE) → Valor mínimo.
+max(x, na.rm = TRUE) → Valor máximo.
+sum(x, na.rm = TRUE) → Suma total.
+range(x, na.rm = TRUE) → Devuelve mínimo y máximo juntos.
+	Medidas de posición quantile(x, 0.25, na.rm = TRUE) → Calcula un cuartil específico (en este caso Q1 = 25%).
+quantile(x, probs = c(0.25, 0.50, 0.75), na.rm = TRUE) → Los tres cuartiles de una vez.
+quantile(x, probs = c(0, 0.25, 0.50, 0.75, 1), na.rm = TRUE) → Incluye mínimo y máximo junto con los cuartiles.
+summary(x) → Resumen estadístico (Min, Q1, Mediana, Media, Q3, Max).
+quantile(x, 0.90, na.rm = TRUE) → Percentil 90.
+quantile(x, seq(0.1, 0.9, 0.1), na.rm = TRUE) → Todos los deciles (D1 a D9).
+quantile(x, probs = c(0.04, 0.08, 0.15, 0.65), na.rm = TRUE) → Percentiles específicos.
+	Manejo de valores faltantes El argumento na.rm = TRUE → elimina los NA antes de calcular.
+Si ya limpiaste los datos y no hay NA, no es necesario incluirlo.
